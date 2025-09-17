@@ -4,19 +4,38 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/context/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
 
-  const navLinks = [
-    { name: "Home", href: "/" },
-    { name: "Dashboard", href: "/dashboard" },
-    { name: "Benefits", href: "/benefits" },
-    { name: "Technical", href: "/technical" },
-    { name: "Research", href: "/research" },
-    { name: "Team", href: "/team" },
-    { name: "Contact", href: "/contact" },
-  ];
+  // Dynamic nav links based on user authentication status
+  const getNavLinks = () => {
+    const baseLinks = [
+      { name: "Home", href: "/" },
+     
+    ];
+    
+    // Add dashboard link only if user is logged in
+    if (user) {
+      const dashboardLink = { 
+        name: "Dashboard", 
+        href: user.role === "admin" ? "/admin/dashboard" : "/dashboard" 
+      };
+      
+      // Add reports link only for admin users
+      const adminLinks = user.role === "admin" ? [
+        { name: "Reports", href: "/admin/reports" }
+      ] : [];
+      
+      return [baseLinks[0], dashboardLink, ...adminLinks, ...baseLinks.slice(1)];
+    }
+    
+    return baseLinks;
+  };
+  
+  const navLinks = getNavLinks();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
@@ -38,16 +57,30 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-          <Button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white">
-            Try Demo
-          </Button>
+          {user ? (
+            <div className="flex items-center space-x-4">
+              <Button 
+                onClick={logout}
+                variant="outline" 
+                className="border-red-500 text-red-500 hover:bg-red-50"
+              >
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <Link href="/login">
+              <Button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white">
+                Login
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Navigation */}
         <div className="md:hidden">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9">
+              <Button variant="outline" size="icon" className="h-9 w-9 border-gray-200 hover:bg-gray-100">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -65,23 +98,40 @@ const Navbar = () => {
                 </svg>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[250px] sm:w-[300px]">
-              <div className="flex flex-col space-y-4 mt-8">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    className="text-gray-600 hover:text-green-600 transition-colors duration-200 py-2"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    {link.name}
-                  </Link>
-                ))}
-                <Button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white mt-4">
-                  Try Demo
-                </Button>
-              </div>
-            </SheetContent>
+            <SheetContent side="right" className="w-[300px]">
+                <div className="flex flex-col space-y-4 mt-8">
+                  {navLinks.map((link) => (
+                    <Link
+                      key={link.name}
+                      href={link.href}
+                      className="text-gray-600 hover:text-green-600 transition-colors duration-200"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      {link.name}
+                    </Link>
+                  ))}
+                  {user ? (
+                    <>
+                      <Button 
+                        onClick={() => {
+                          logout();
+                          setIsOpen(false);
+                        }}
+                        variant="outline" 
+                        className="border-red-500 text-red-500 hover:bg-red-50"
+                      >
+                        Logout
+                      </Button>
+                    </>
+                  ) : (
+                    <Link href="/login" onClick={() => setIsOpen(false)}>
+                      <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white">
+                        Login
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </SheetContent>
           </Sheet>
         </div>
       </div>
